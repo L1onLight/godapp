@@ -15,11 +15,11 @@ RUN poetry install --no-interaction --no-ansi --no-root
 
 WORKDIR /src/godapp_main
 
-RUN adduser --disabled-password --gecos '' --uid 1000 octocrm
+RUN adduser --disabled-password --gecos '' --uid 1000 godapp_user
 
 COPY . .
 
-RUN chown -R octocrm:octocrm /src/godapp_main
-USER octocrm
+RUN chown -R godapp_user:godapp_user /src/godapp_main
+USER godapp_user
 
 EXPOSE 8000
