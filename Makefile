@@ -8,7 +8,7 @@ dev-down:
 	docker compose \
   -f docker-compose/compose.base.yaml \
   -f docker-compose/compose.django.yaml \
-  down -v
+  down --remove-orphans
 
 migrate:
 	docker compose \
@@ -21,3 +21,15 @@ makemigrations:
   -f docker-compose/compose.base.yaml \
   -f docker-compose/compose.django.yaml \
   exec godapp_main python manage.py makemigrations
+
+createsuperuser:
+	docker compose \
+  -f docker-compose/compose.base.yaml \
+  -f docker-compose/compose.django.yaml \
+  exec godapp_main python manage.py createsuperuser
+
+startapp:
+	docker compose \
+  -f docker-compose/compose.base.yaml \
+  -f docker-compose/compose.django.yaml \
+  exec godapp_main python manage.py startapp $(NAME)

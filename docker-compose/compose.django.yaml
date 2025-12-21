@@ -7,7 +7,7 @@ services:
       - ../backend/src/.env.backend.dev
       - ./.env.postgres
     volumes:
-      - ../backend/src/godapp_main:/app
+      - ../backend/src/godapp_main:/src/godapp_main
     ports:
       - "8000:8000"
     depends_on:
