@@ -6,6 +6,8 @@ services:
     env_file:
       - ../backend/.env.backend.dev
       - ../backend/.env.postgres
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings.dev
     volumes:
       - ../backend/godapp_main:/src/godapp_main
     ports:

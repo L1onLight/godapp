@@ -1,0 +1,9 @@
+{% extends "admin/change_form.html" %}
+
+{# Add a "Test Channel" button near the history link #}
+{% block object-tools-items %}
+{{ block.super }}
+<li>
+    <a href="{{ test_comm_url }}" class="button" target="_self">Test Channel</a>
+</li>
+{% endblock %}

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic import Field, SecretStr
@@ -8,12 +9,24 @@ env_file = BACKEND_DIR / ".env.backend.dev"
 postgres_env_file = BACKEND_DIR / ".env.postgres"
 
 
+class EnvModule:
+    _module = os.getenv("DJANGO_SETTINGS_MODULE").split(".")[-1]
+
+    @classmethod
+    def is_local(cls) -> bool:
+        return cls._module == "local"
+
+
 class DatabaseSettings(BaseSettings):
     NAME: str = Field(alias="POSTGRES_DB")
     USER: str
     PASSWORD: str
-    HOST: str = "postgres"
-    PORT: int = 5432
+    HOST: str = Field(
+        alias="POSTGRES_HOST" if not EnvModule.is_local() else "POSTGRES_HOST_LOCAL"
+    )
+    PORT: int = Field(
+        alias="POSTGRES_PORT" if not EnvModule.is_local() else "POSTGRES_PORT_LOCAL"
+    )
 
     model_config = SettingsConfigDict(
         extra="allow",

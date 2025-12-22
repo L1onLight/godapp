@@ -1,0 +1,39 @@
+<!-- CSS -->
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+<!-- JS -->
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
+<form id="myForm" onsubmit="return handleSubmit(event)">
+    <div id="editor"></div>
+    <input type="hidden" name="content" id="hiddenContent">
+    <button type="submit">Submit</button>
+</form>
+
+<script>
+    const editor = new toastui.Editor({
+        el: document.querySelector('#editor'),
+        height: '300px',
+        initialEditType: 'markdown',
+        previewStyle: 'vertical'
+    });
+
+    // Sync editor content to hidden input before form submission
+    function handleSubmit(event) {
+        event.preventDefault();
+
+        // Get markdown or HTML and set it to the hidden input
+        document.getElementById('hiddenContent').value = editor.getMarkdown();
+        // Or use: document.getElementById('hiddenContent').value = editor.getHtml();
+
+        // Now submit the form (or handle the data as needed)
+        console.log('Form data:', new FormData(event.target));
+        alert('Content: ' + editor.getMarkdown());
+
+        return false; // Remove this to allow actual form submission
+    }
+
+    // Alternative: Auto-sync on every change
+    editor.on('change', () => {
+        document.getElementById('hiddenContent').value = editor.getMarkdown();
+    });
+</script>
