@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:18-alpine
     env_file:
-      - ./.env.postgres
+      - ../backend/.env.postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks: [backend]

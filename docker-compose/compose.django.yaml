@@ -5,7 +5,7 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     env_file:
       - ../backend/.env.backend.dev
-      - ./.env.postgres
+      - ../backend/.env.postgres
     volumes:
       - ../backend/godapp_main:/src/godapp_main
     ports:
