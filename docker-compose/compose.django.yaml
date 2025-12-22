@@ -1,13 +1,13 @@
 services:
   godapp_main:
     build:
-      context: ../backend/src/godapp_main
+      context: ../backend/godapp_main
     command: python manage.py runserver 0.0.0.0:8000
     env_file:
-      - ../backend/src/.env.backend.dev
+      - ../backend/.env.backend.dev
       - ./.env.postgres
     volumes:
-      - ../backend/src/godapp_main:/src/godapp_main
+      - ../backend/godapp_main:/src/godapp_main
     ports:
       - "8000:8000"
     depends_on:
