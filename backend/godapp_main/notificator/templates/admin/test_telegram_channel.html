@@ -41,7 +41,7 @@
                 <label for="id_message">Test Message:</label>
 
                 <!-- Toast UI Editor Container (hidden by default) -->
-                <div id="editor-container"></div>
+                <div id="editor-container" style="background-color: white;"></div>
 
                 <!-- Regular textarea (shown by default) -->
                 <textarea name="message" id="id_message" rows="4" placeholder="Enter test message..."
@@ -73,7 +73,8 @@
     channelSelect.addEventListener('change', function () {
         const selectedOption = this.options[this.selectedIndex];
         const method = selectedOption.getAttribute('data-method');
-        if (method === 'markdown_v2') {
+        console.log('Selected method:', method);
+        if (method === 'MarkdownV2' || method === 'Markdown') {
             // Show Toast UI Editor
             messageTextarea.style.display = 'none';
             messageTextarea.removeAttribute('required');

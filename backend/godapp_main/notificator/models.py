@@ -1,4 +1,6 @@
 from base_utils.fields import FernetEncryptedCharField
+from base_utils.security import CipherManager
+from django.contrib.auth import get_user_model
 from django.db import models
 from polymorphic.models import PolymorphicModel
 
@@ -36,7 +38,7 @@ class TelegramChannel(NotificationChannel):
     def communicate(self, message: str):
         from todo.services.telegram_bot import TelegramBotConnector
 
-        bot = TelegramBotConnector(token=self.bot_token)
+        bot = TelegramBotConnector(token=self.get_token())
         bot.send_notification(
             chat_id=self.chat_id,
             text=message,
@@ -45,3 +47,19 @@ class TelegramChannel(NotificationChannel):
             protect_content=self.protect_content,
             disable_notification=self.disable_notification,
         )
+
+    def get_token(self):
+        return CipherManager.decrypt(self.bot_token)
+
+
+class NotificatorSettings(models.Model):
+    user = models.OneToOneField(
+        get_user_model(),
+        on_delete=models.CASCADE,
+        related_name="notificator_settings",
+    )
+    todo_notificators = models.ManyToManyField(
+        NotificationChannel,
+        blank=True,
+        related_name="notificator_settings",
+    )

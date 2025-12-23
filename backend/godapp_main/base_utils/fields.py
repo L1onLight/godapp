@@ -9,11 +9,6 @@ class FernetEncryptedCharField(models.CharField):
     and decrypts it when retrieving from the database.
     """
 
-    def from_db_value(self, value, expression, connection):
-        if value is None:
-            return value
-        return CipherManager.decrypt(value)
-
     def get_prep_value(self, value):
         if value is None:
             return value

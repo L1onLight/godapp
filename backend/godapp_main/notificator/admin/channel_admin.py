@@ -1,3 +1,4 @@
+from base_utils.widgets import EncryptedCharFieldWidget
 from django.contrib import admin
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -11,10 +12,24 @@ class NotificationChannelAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
+class EncryptedFieldMapperMixin:
+    encrypted_field_mapping = {}
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        for field_name, widget_class in self.encrypted_field_mapping.items():
+            if db_field.name == field_name:
+                widget = widget_class()
+                widget.request = request
+                formfield.widget = widget
+        return formfield
+
+
 @admin.register(TelegramChannel)
-class TelegramChannelAdmin(admin.ModelAdmin):
-    list_display = ("name", "chat_id", "bot_token")
+class TelegramChannelAdmin(EncryptedFieldMapperMixin, admin.ModelAdmin):
+    list_display = ("name", "chat_id", "display_bot_token")
     search_fields = ("name", "chat_id")
+    encrypted_field_mapping = {"bot_token": EncryptedCharFieldWidget}
 
     # Use a custom change form to inject a "Test Channel" button near history
     change_form_template = "admin/notificator/telegramchannel/change_form.html"
@@ -56,3 +71,14 @@ class TelegramChannelAdmin(admin.ModelAdmin):
                 name="test-telegram-communication",
             ),
         ] + super().get_urls()
+
+    @admin.display(description="Bot Token")
+    def display_bot_token(self, obj):
+        if obj and obj.bot_token:
+            user = getattr(self, "request", None) and getattr(
+                self.request, "user", None
+            )
+            if user and user.has_perm("base_utils.view_encrypted_field"):
+                return obj.bot_token
+            else:
+                return "**********"
