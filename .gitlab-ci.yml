@@ -1,0 +1,40 @@
+stages:
+  - build
+  - test
+
+variables:
+  POSTGRES_DB: godapp_db
+  POSTGRES_USER: godapp_user
+  POSTGRES_PASSWORD: godapp_password
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: 5432
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  DJANGO_SETTINGS_MODULE: core.settings.local
+
+build-compose:
+  stage: build
+  image: docker:24.0.5  # Docker in Docker
+  services:
+    - docker:dind
+  script:
+    - docker compose -f docker-compose/compose.base.yaml -f docker-compose/compose.django.yaml build
+
+django-tests:
+  stage: test
+  image: python:3.13
+  services:
+    - name: postgres:16
+      alias: postgres
+    - name: redis:7
+      alias: redis
+  before_script:
+    - python -m pip install --upgrade pip poetry
+    - cd backend/godapp_main
+    - poetry config virtualenvs.create false
+    - poetry install --no-interaction --no-root --with dev
+    - sleep 10
+    - poetry run python manage.py migrate --noinput
+  script:
+    - cd backend/godapp_main
+    - poetry run python manage.py test
