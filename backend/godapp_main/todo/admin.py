@@ -1,11 +1,24 @@
+from base_utils.widgets import QuickSetDateTimeWidget
+from django import forms
 from django.contrib import admin
 
 from todo.models import TodoItem
 
-# Register your models here.
+
+class TodoItemAdminForm(forms.ModelForm):
+    due_date = forms.SplitDateTimeField(
+        required=False,
+        widget=QuickSetDateTimeWidget(),
+    )
+
+    class Meta:
+        model = TodoItem
+        fields = "__all__"
+
 
 @admin.register(TodoItem)
 class TodoItemAdmin(admin.ModelAdmin):
-    list_display = ('title', 'completed')
-    list_filter = ('completed',)
-    search_fields = ('title',)
+    form = TodoItemAdminForm
+    list_display = ("title", "is_completed", "due_date")
+    list_filter = ("is_completed",)
+    search_fields = ("title",)

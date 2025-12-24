@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -36,13 +37,37 @@ class DatabaseSettings(BaseSettings):
     )
 
 
+class RedisSettings(BaseSettings):
+    HOST: str
+    USERNAME: str | None = None
+    PASSWORD: str | None = None
+    PORT: int = 6379
+    CELERY_DB: int = 0
+    CACHE_DB: int = 1
+
+    def redis_dsn(self, db_type: Literal["celery", "cache"]) -> str:
+        db_map = {"celery": self.CELERY_DB, "cache": self.CACHE_DB}
+        db_number = db_map[db_type]
+        if self.USERNAME and self.PASSWORD:
+            return f"redis://{self.USERNAME}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{db_number}"
+        else:
+            return f"redis://{self.HOST}:{self.PORT}/{db_number}"
+
+    model_config = SettingsConfigDict(
+        extra="allow",
+        env_file=BACKEND_DIR / ".env.redis",
+        env_file_encoding="utf-8",
+        env_prefix="REDIS_",
+    )
+
+
 class ConfigSettings(BaseSettings):
     SECRET_KEY: str
     ENCRYPTION_KEY: SecretStr
     DEBUG: bool = False
     ALLOWED_HOSTS: list[str] = []
     DB: DatabaseSettings = DatabaseSettings()
-
+    REDIS: RedisSettings = RedisSettings()
     model_config = SettingsConfigDict(
         extra="allow", env_file=env_file, env_file_encoding="utf-8"
     )

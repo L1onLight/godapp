@@ -11,22 +11,24 @@ class CipherManager:
     @classmethod
     def encrypt(cls, value):
         _value = value if isinstance(value, bytes) else value.encode()
-        return cls.__cipher.encrypt(_value).decode()
+        _enc_val = cls.__cipher.encrypt(_value).decode()
+        return _enc_val
 
     @classmethod
     def decrypt(cls, value, base64_encoded: bool = False):
-        if base64_encoded:
-            value = base64.b64decode(value)
+        try:
+            if base64_encoded:
+                value = base64.b64decode(value)
 
-        _value = value if isinstance(value, bytes) else value.encode()
-        return cls.__cipher.decrypt(_value).decode()
+            _value = value if isinstance(value, bytes) else value.encode()
+            return cls.__cipher.decrypt(_value).decode()
+        except Exception:
+            return None
 
     @classmethod
     def is_encrypted(cls, value):
         try:
             cls.__cipher.decrypt(value.encode())
             return True
-        except binascii.Error:
-            return False
-        except InvalidToken:
+        except (binascii.Error, InvalidToken):
             return False

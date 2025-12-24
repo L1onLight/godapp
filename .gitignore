@@ -220,3 +220,6 @@ trash*.py
 .env*.local
 .env*.dev
 .env.postgres
+.env.redis
+
+celerybeat-*

@@ -1,18 +1,35 @@
+
+x-backend-defaults: &backend-defaults
+  build:
+    context: ../backend/godapp_main
+  env_file:
+    - ../backend/.env.backend.dev
+    - ../backend/.env.postgres
+    - ../backend/.env.redis
+  environment:
+    - DJANGO_SETTINGS_MODULE=core.settings.dev
+    - REDIS_HOST=redis
+
+  volumes:
+    - ../backend/godapp_main:/src/godapp_main
+  depends_on:
+    - postgres
+    - redis
+  networks: [backend]
+
 services:
   godapp_main:
-    build:
-      context: ../backend/godapp_main
+    <<: *backend-defaults
     command: python manage.py runserver 0.0.0.0:8000
-    env_file:
-      - ../backend/.env.backend.dev
-      - ../backend/.env.postgres
-    environment:
-      - DJANGO_SETTINGS_MODULE=core.settings.dev
-    volumes:
-      - ../backend/godapp_main:/src/godapp_main
     ports:
       - "8000:8000"
-    depends_on:
-      - postgres
-      - redis
-    networks: [backend]
+
+  celery_worker:
+    <<: *backend-defaults
+    # command: celery -A core worker --loglevel=info
+    command: watchmedo auto-restart --pattern=tasks.py --recursive -- celery -A core worker --loglevel=info --pool=solo
+
+  celery_beat:
+    <<: *backend-defaults
+    # command: celery -A core beat --loglevel=info
+    command: watchmedo auto-restart --pattern=tasks.py --recursive -- celery -A core beat --loglevel=info

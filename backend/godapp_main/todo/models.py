@@ -9,11 +9,12 @@ class TodoItem(models.Model):
         related_name="todo_items",
     )
     title = models.CharField(max_length=200)
-    completed = models.BooleanField(default=False)
+    is_completed = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    until = models.DateTimeField(null=True, blank=True)
+    due_date = models.DateTimeField(null=True, blank=True)
     notification_sent = models.BooleanField(default=False)
+    notification_queued = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
