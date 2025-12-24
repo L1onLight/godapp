@@ -10,6 +10,6 @@ class FernetEncryptedCharField(models.CharField):
     """
 
     def get_prep_value(self, value):
-        if value is None:
+        if value is None or CipherManager.is_encrypted(value):
             return value
         return CipherManager.encrypt(value)

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 
+from .celery_schedule import SCHEDULE
 from .config import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_extensions",
+    "celery",
     "base_utils",
     "todo",
     "notificator",
@@ -124,3 +126,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+broker_url = config.REDIS.redis_dsn("celery")
+result_backend = config.REDIS.redis_dsn("celery")
+accept_content = ["application/json"]
+task_serializer = "json"
+result_serializer = "json"
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": config.REDIS.redis_dsn("cache"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+beat_schedule = SCHEDULE

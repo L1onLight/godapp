@@ -13,13 +13,12 @@ WORKDIR /tmp/poetry_build
 RUN poetry install --no-interaction --no-ansi --no-root
 
 
-WORKDIR /src/godapp_main
+WORKDIR /backend/godapp_main
 
 RUN adduser --disabled-password --gecos '' --uid 1000 godapp_user
 
-COPY . .
-
-RUN chown -R godapp_user:godapp_user /src/godapp_main
+COPY . /backend/godapp_main
+RUN chown -R godapp_user:godapp_user /backend/godapp_main
 USER godapp_user
-
-EXPOSE 8000
+    # - PYTHONPATH=/src/godapp_main
+ENV PYTHONPATH=$PYTHONPATH:/backend/godapp_main

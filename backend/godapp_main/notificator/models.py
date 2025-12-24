@@ -1,7 +1,10 @@
+from abc import abstractmethod
+
 from base_utils.fields import FernetEncryptedCharField
 from base_utils.security import CipherManager
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import QuerySet
 from polymorphic.models import PolymorphicModel
 
 
@@ -16,6 +19,10 @@ class NotificationChannel(PolymorphicModel):
     def __str__(self):
         return self.name
 
+    @abstractmethod
+    def notify(self, message: str):
+        pass
+
 
 class TelegramChannel(NotificationChannel):
     class ParseModes(models.TextChoices):
@@ -24,7 +31,7 @@ class TelegramChannel(NotificationChannel):
         MARKDOWN_V2 = "MarkdownV2", "MarkdownV2"
 
     chat_id = models.CharField(max_length=100)
-    bot_token = FernetEncryptedCharField(max_length=200)
+    bot_token = FernetEncryptedCharField(max_length=255)
 
     message_thread_id = models.CharField(max_length=100, null=True, blank=True)
     parse_mode = models.CharField(
@@ -35,21 +42,13 @@ class TelegramChannel(NotificationChannel):
     protect_content = models.BooleanField(default=False)
     disable_notification = models.BooleanField(default=False)
 
-    def communicate(self, message: str):
-        from todo.services.telegram_bot import TelegramBotConnector
-
-        bot = TelegramBotConnector(token=self.get_token())
-        bot.send_notification(
-            chat_id=self.chat_id,
-            text=message,
-            message_thread_id=self.message_thread_id,
-            parse_mode=self.parse_mode,
-            protect_content=self.protect_content,
-            disable_notification=self.disable_notification,
-        )
-
     def get_token(self):
         return CipherManager.decrypt(self.bot_token)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not CipherManager.is_encrypted(self.bot_token):
+            self.bot_token = CipherManager.encrypt(self.bot_token)
 
 
 class NotificatorSettings(models.Model):
@@ -63,3 +62,12 @@ class NotificatorSettings(models.Model):
         blank=True,
         related_name="notificator_settings",
     )
+
+    @classmethod
+    def get_notificators(cls, user_id) -> QuerySet["NotificationChannel"]:
+        try:
+            settings = cls.objects.get(user__id=user_id)
+            return settings.todo_notificators.all()
+
+        except cls.DoesNotExist:
+            return cls.objects.none()

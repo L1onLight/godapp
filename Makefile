@@ -33,3 +33,9 @@ startapp:
   -f docker-compose/compose.base.yaml \
   -f docker-compose/compose.django.yaml \
   exec godapp_main python manage.py startapp $(NAME)
+
+tail:
+	docker compose \
+  -f docker-compose/compose.base.yaml \
+  -f docker-compose/compose.django.yaml \
+  logs -f godapp_main

@@ -3,6 +3,8 @@ from django.contrib import admin
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 
+from notificator.channels import NotificatorService
+
 from ..models import NotificationChannel, TelegramChannel
 
 
@@ -30,17 +32,13 @@ class TelegramChannelAdmin(EncryptedFieldMapperMixin, admin.ModelAdmin):
     list_display = ("name", "chat_id", "display_bot_token")
     search_fields = ("name", "chat_id")
     encrypted_field_mapping = {"bot_token": EncryptedCharFieldWidget}
-
-    # Use a custom change form to inject a "Test Channel" button near history
     change_form_template = "admin/notificator/telegramchannel/change_form.html"
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         extra_context = extra_context or {}
-        # Build URL to the custom test communication view within admin namespace
         try:
             test_url = reverse("admin:test-telegram-communication")
         except Exception:
-            # Fallback: construct with app/model prefix if named that way in future
             test_url = reverse(
                 f"admin:{self.model._meta.app_label}_{self.model._meta.model_name}_test-telegram-communication"
             )
@@ -52,8 +50,9 @@ class TelegramChannelAdmin(EncryptedFieldMapperMixin, admin.ModelAdmin):
             channel_id = request.POST.get("channel_id")
             message = request.POST.get("message")
             try:
-                channel = TelegramChannel.objects.get(id=channel_id)
-                channel.communicate(message)
+                NotificatorService.notify(
+                    channel=TelegramChannel.objects.get(id=channel_id), message=message
+                )
                 self.message_user(request, "Message sent successfully.")
             except TelegramChannel.DoesNotExist:
                 self.message_user(request, "Channel does not exist.", level="error")

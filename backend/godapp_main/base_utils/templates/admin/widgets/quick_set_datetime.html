@@ -1,0 +1,6 @@
+{% include "django/forms/widgets/multiwidget.html" %}
+<div class="quick-set-buttons" data-target="{{ widget.attrs.id }}">
+    {% for value, label in quick_set_buttons %}
+    <button type="button" class="quick-set-btn" data-value="{{ value }}">{{ label }}</button>
+    {% endfor %}
+</div>
