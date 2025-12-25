@@ -11,7 +11,7 @@ x-backend-defaults: &backend-defaults
     - REDIS_HOST=redis
 
   volumes:
-    - ../backend/godapp_main:/src/godapp_main
+    - ../backend/godapp_main:/backend/godapp_main
   depends_on:
     - postgres
     - redis

@@ -13,6 +13,8 @@ class NotificatorService:
         raise ValueError("Unsupported notification channel type")
 
     @classmethod
-    def notify(cls, channel: NotificationChannel, message: str):
+    def notify(
+        cls, channel: NotificationChannel, message: str
+    ):  # todo: rework to use todo instead of message
         channel: TelegramNotificator = cls.get_channel_notificator(channel)
         channel.send_notification(message)

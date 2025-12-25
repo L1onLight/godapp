@@ -5,7 +5,7 @@ from django.urls import path, reverse
 
 from notificator.channels import NotificatorService
 
-from ..models import NotificationChannel, TelegramChannel
+from ..models import NotificationChannel, NotificatorSettings, TelegramChannel
 
 
 @admin.register(NotificationChannel)
@@ -81,3 +81,9 @@ class TelegramChannelAdmin(EncryptedFieldMapperMixin, admin.ModelAdmin):
                 return obj.bot_token
             else:
                 return "**********"
+
+
+@admin.register(NotificatorSettings)
+class NotificatorSettingsAdmin(admin.ModelAdmin):
+    list_display = ("user",)
+    search_fields = ("user__username", "user__email")

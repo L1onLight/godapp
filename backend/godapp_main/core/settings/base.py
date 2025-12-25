@@ -115,7 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Kyiv"
 
 USE_I18N = True
 
@@ -132,7 +132,7 @@ result_backend = config.REDIS.redis_dsn("celery")
 accept_content = ["application/json"]
 task_serializer = "json"
 result_serializer = "json"
-
+timezone = TIME_ZONE
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",

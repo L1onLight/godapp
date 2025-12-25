@@ -21,7 +21,7 @@ class NotificationChannel(PolymorphicModel):
 
     @abstractmethod
     def notify(self, message: str):
-        pass
+        raise NotImplementedError
 
 
 class TelegramChannel(NotificationChannel):
