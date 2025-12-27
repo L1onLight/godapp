@@ -1,5 +1,15 @@
 {
     "python.analysis.extraPaths": [
         "./backend/godapp_main"
-    ]
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+        // Enable auto-fixing of all fixable lint violations on save
+        "source.fixAll": "explicit", 
+        // Enable organizing imports on save
+        "source.organizeImports": "explicit" 
+        }
+    },
 }

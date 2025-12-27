@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from celery import shared_task
 from django.utils import timezone
@@ -12,13 +12,17 @@ logger = base_logger.bind(module="todo.tasks")
 
 
 @shared_task
-def send_todo_notification(todo_id: int):
+def send_todo_notification(todo_id: int, due_date: datetime):
     # Placeholder function to simulate sending a notification
     todo = TodoItemRepository.get_by_id(todo_id)
-    if todo.is_completed or todo.due_date is None:
+    if todo.is_completed or todo.due_date is None or (todo.due_date != due_date):
+        logger.debug(
+            "1. Todo is completed or due date has changed, skipping notification."
+        )
         return
 
     if todo.notification_sent and not todo.notification_queued:
+        logger.debug("2. Notification already sent and not queued, skipping.")
         return
 
     todo.notification_queued = False
@@ -29,7 +33,7 @@ def send_todo_notification(todo_id: int):
     logger.info(f"Notification sent for TodoItem ID: {todo_id}")
     now = timezone.now()
     for notificator in user_notificators:
-        print(f"Notificator type: {type(notificator)}")
+        logger.debug(f"Notificator type: {type(notificator)}")
         # Calculate mins and seconds and append msg like this: Due in X mins Y secs
         msg = f"Reminder: Your todo '{todo.title}' is due soon!\nDue in {(todo.due_date - now).seconds // 60} mins {(todo.due_date - now).seconds % 60} secs."
 
@@ -53,6 +57,8 @@ def schedule_upcoming_window():
     logger.info(f"Found {todos.count()} todos to schedule notifications for.")
 
     for todo in todos:
-        send_todo_notification.apply_async(args=[todo.id], eta=todo.due_date)
+        send_todo_notification.apply_async(
+            args=[todo.id, todo.due_date], eta=todo.due_date
+        )
         todo.notification_queued = True
         todo.save(update_fields=["notification_queued"])
