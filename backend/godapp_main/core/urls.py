@@ -19,10 +19,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from ninja import NinjaAPI
+
+ninja_api = NinjaAPI()
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("todo/", include("todo.urls")),
+    path("", include("todo.urls")),
+    path("api/", ninja_api.urls),
 ]
 
 if settings.DEBUG:

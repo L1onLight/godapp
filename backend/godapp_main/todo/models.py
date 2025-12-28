@@ -7,6 +7,13 @@ logger = base_logger.bind(module="todo.models")
 
 
 class TodoItem(models.Model):
+    class KanbanColumn(models.TextChoices):
+        UNASSIGNED = "UNASSIGNED", "Unassigned"
+        TO_DO = "TO_DO", "To Do"
+        IN_PROGRESS = "IN_PROGRESS", "In Progress"
+        DONE = "DONE", "Done"
+        ARCHIVED = "ARCHIVED", "Archived"
+
     user = models.ForeignKey(
         get_user_model(),
         on_delete=models.CASCADE,
@@ -20,22 +27,47 @@ class TodoItem(models.Model):
     notification_sent = models.BooleanField(default=False)
     notification_queued = models.BooleanField(default=False)
 
+    column = models.CharField(
+        max_length=20,
+        choices=KanbanColumn.choices,
+        default=KanbanColumn.UNASSIGNED,
+    )
+    column_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["column_order", "-created_at"]
+
     def __str__(self):
         return self.title
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        if self.due_date:
+        if self.due_date and not getattr(self, "_skip_notification", False):
             self._schedule_notification()
+
+    def update_column(self, new_column: str, new_order: int, save=True):
+        """Update the kanban column and order of the todo item."""
+        if new_column not in self.KanbanColumn.values:
+            raise ValueError(f"Invalid column: {new_column}")
+
+        self.column = new_column
+        self.column_order = new_order
+        self._skip_notification = True  # Prevent recursion
+        if save:
+            self.save(update_fields=["column", "column_order"])
 
     def _schedule_notification(self):
         """Schedule notification for this todo item."""
         from todo.tasks import schedule_todo_notification
 
-        if not self.due_date or self.is_completed:
+        if (
+            not self.due_date
+            or self.is_completed
+            or self.column in [self.KanbanColumn.DONE, self.KanbanColumn.ARCHIVED]
+        ):
             logger.debug(
-                f"Skipping notification for TodoItem ID: {self.id} (no due_date or completed)"
+                f"Skipping notification scheduling for TodoItem ID: {self.id} (due_date is None, completed, or in DONE/ARCHIVED column)"
             )
             return
 

@@ -3,6 +3,8 @@ import binascii
 
 from core.settings.config import config
 from cryptography.fernet import Fernet, InvalidToken
+from django.contrib.auth import authenticate
+from ninja.security import HttpBasicAuth
 
 
 class CipherManager:
@@ -32,3 +34,13 @@ class CipherManager:
             return True
         except (binascii.Error, InvalidToken):
             return False
+
+
+class NinjaBasicAuth(HttpBasicAuth):
+    def authenticate(self, request, username, password):
+        try:
+            user = authenticate(request, username=username, password=password)
+            request.user = user
+            return bool(user)
+        except Exception:
+            return None

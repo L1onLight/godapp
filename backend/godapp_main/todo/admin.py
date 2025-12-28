@@ -19,6 +19,13 @@ class TodoItemAdminForm(forms.ModelForm):
 @admin.register(TodoItem)
 class TodoItemAdmin(admin.ModelAdmin):
     form = TodoItemAdminForm
-    list_display = ("title", "is_completed", "due_date")
-    list_filter = ("is_completed",)
+    list_display = (
+        "title",
+        "is_completed",
+        "due_date",
+        "column",
+        "column_order",
+        "user",
+    )
+    list_filter = ("is_completed", "column", "due_date")
     search_fields = ("title",)
