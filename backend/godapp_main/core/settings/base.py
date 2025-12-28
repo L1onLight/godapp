@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "celery",
     "base_utils",
-    "todo",
+    "todo.apps.TodoConfig",
     "notificator",
 ]
 

@@ -1,4 +1,3 @@
-
 x-backend-defaults: &backend-defaults
   build:
     context: ../backend/godapp_main
@@ -9,6 +8,7 @@ x-backend-defaults: &backend-defaults
   environment:
     - DJANGO_SETTINGS_MODULE=core.settings.dev
     - REDIS_HOST=redis
+    - REDIS_PORT=6379
 
   volumes:
     - ../backend/godapp_main:/backend/godapp_main
@@ -18,11 +18,11 @@ x-backend-defaults: &backend-defaults
   networks: [backend]
 
 services:
-  godapp_main:
-    <<: *backend-defaults
-    command: python manage.py runserver 0.0.0.0:8000
-    ports:
-      - "8000:8000"
+  # godapp_main:
+  #   <<: *backend-defaults
+  #   command: python manage.py runserver 0.0.0.0:8000
+  #   ports:
+  #     - "8000:8000"
 
   celery_worker:
     <<: *backend-defaults
