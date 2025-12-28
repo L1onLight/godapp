@@ -1,6 +1,9 @@
 from django.db.models import QuerySet
+from loguru import logger as base_logger
 
 from todo.models import TodoItem
+
+logger = base_logger.bind(module="todo.repository")
 
 
 class TodoItemRepository:

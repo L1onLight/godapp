@@ -23,5 +23,5 @@ def debug_task(self):
     print(f"Request: {self.request!r}")
 
 
-# clear queue on start:
-app.control.purge()
+# # clear queue on start:
+# app.control.purge()
