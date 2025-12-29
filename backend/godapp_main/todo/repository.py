@@ -15,7 +15,9 @@ class TodoItemRepository:
 
     @classmethod
     def get_user_todo_items(cls, user_id: int) -> QuerySet["TodoItem"]:
-        return cls._model.objects.filter(user__id=user_id).all()
+        rs = cls._model.objects.filter(user__id=user_id).all()
+        print(rs, user_id)
+        return rs
 
     @classmethod
     def filter_by_due_date_range(cls, start_date, end_date) -> QuerySet["TodoItem"]:

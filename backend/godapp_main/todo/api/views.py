@@ -1,16 +1,17 @@
-from base_utils.security import NinjaBasicAuth
+from base_utils.security import JWTAuth, NinjaBasicAuth
 from ninja import Router
 from ninja.security import django_auth
 
 from todo.api.schemas import TodoCreateSchema, TodoListSchema
 from todo.repository import AsyncTodoItemRepository, TodoItemRepository
 
-todo_router = Router(auth=[django_auth, NinjaBasicAuth()], tags=["Todo"])
+todo_router = Router(auth=[django_auth, NinjaBasicAuth(), JWTAuth()], tags=["Todo"])
 
 
 @todo_router.get("/", response=list[TodoListSchema])
 async def list_(request) -> list[TodoListSchema]:
     todo_items = await AsyncTodoItemRepository.aget_user_todo_items(request.user.id)
+    print(todo_items)
     return [TodoListSchema.from_orm(item) for item in todo_items]
 
 
