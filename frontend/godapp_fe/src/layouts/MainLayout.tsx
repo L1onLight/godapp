@@ -1,4 +1,7 @@
 import { ReactNode } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { ThemeSelector } from '@/components/ThemeSelector'
 
 interface ModuleLink {
   label: string
@@ -38,33 +41,40 @@ function GearIcon() {
 
 function MainLayout({ modules, sidebar, children }: MainLayoutProps) {
   return (
-    <div className="layout">
-      <header className="layout-header">
-        <div className="brand bg-white">Godapp</div>
-        <nav className="layout-nav" aria-label="Modules">
-          {modules.map((module) => (
-            <a
-              key={module.href}
-              href={module.href}
-              className={module.active ? 'active' : undefined}
-            >
-              {module.label}
-            </a>
-          ))}
-        </nav>
-        <button className="icon-button" type="button" aria-label="Settings">
-          <GearIcon />
-        </button>
-      </header>
+    <div className="min-h-screen flex flex-col">
+      <Card className="rounded-none border-b">
+        <CardContent className="flex items-center gap-4 justify-between">
+          <div className="flex items-center gap-4">
+            <div className="text-xl font-semibold">Godapp</div>
+            <nav className="flex items-center gap-3" aria-label="Modules">
+              {modules.map((module) => (
+                <a
+                  key={module.href}
+                  href={module.href}
+                  className={module.active ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'}
+                >
+                  {module.label}
+                </a>
+              ))}
+            </nav>
+          </div>
+          <div className="flex items-center gap-3">
+            <ThemeSelector />
+            <Button type="button" size="icon" variant="outline" aria-label="Settings">
+              <GearIcon />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="layout-body">
-        <aside className="layout-sidebar" aria-label="Module sections">
+      <div className="flex flex-1">
+        <aside className="w-64 border-r p-4 space-y-6" aria-label="Module sections">
           {sidebar.map((section) => (
-            <div key={section.title} className="sidebar-section">
-              <p className="sidebar-title">{section.title}</p>
-              <div className="sidebar-links">
+            <div key={section.title} className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">{section.title}</p>
+              <div className="flex flex-col gap-1">
                 {section.items.map((item) => (
-                  <a key={item.href} href={item.href}>
+                  <a key={item.href} href={item.href} className="text-sm hover:text-primary">
                     {item.label}
                   </a>
                 ))}
@@ -73,7 +83,7 @@ function MainLayout({ modules, sidebar, children }: MainLayoutProps) {
           ))}
         </aside>
 
-        <main className="layout-content">{children}</main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   )

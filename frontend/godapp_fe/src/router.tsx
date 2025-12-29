@@ -3,6 +3,7 @@ import App from './App'
 import AuthPage from './pages/AuthPage'
 import TodoPage from './modules/todo/todo/pages/TodoPage'
 import MainLayout from './layouts/MainLayout'
+import KanbanPage from './modules/todo/todo/pages/KanbanPage'
 
 class TodoUrls {
     static todoList = '/todo'
@@ -60,10 +61,7 @@ const todoKanbanRoute = new Route({
         ]
         return (
             <MainLayout modules={modules} sidebar={sidebar}>
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold">Kanban View</h1>
-                    <p className="text-gray-600 mt-2">Kanban board coming soon...</p>
-                </div>
+                <KanbanPage />
             </MainLayout>
         )
     },

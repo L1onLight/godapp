@@ -58,3 +58,9 @@ dev-fe-down:
   -f docker-compose/compose.base.yaml \
   -f docker-compose/compose.frontend.yaml \
   down
+
+local-be:
+	cd backend/godapp_main && python manage.py runserver
+
+local-fe:
+	cd frontend/godapp-frontend && npm run dev
