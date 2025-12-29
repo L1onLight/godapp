@@ -13,6 +13,18 @@ class ApiClient {
         this.baseURL = baseURL
     }
 
+    private getCsrfToken(): string | null {
+        const name = 'csrftoken'
+        const cookies = document.cookie.split(';')
+        for (let cookie of cookies) {
+            cookie = cookie.trim()
+            if (cookie.startsWith(name + '=')) {
+                return decodeURIComponent(cookie.substring(name.length + 1))
+            }
+        }
+        return null
+    }
+
     private async processQueue(error: Error | null) {
         this.failedQueue.forEach(promise => {
             if (error) {
@@ -28,6 +40,8 @@ class ApiClient {
         endpoint: string,
         options: RequestInit = {}
     ): Promise<T> {
+        const csrfToken = this.getCsrfToken()
+
         const config: RequestInit = {
             credentials: 'include', // Send cookies with every request
             ...options,
@@ -35,6 +49,7 @@ class ApiClient {
                 'Content-Type': 'application/json',
                 'Access-Control-Request-Headers': 'true',
                 'Access-Control-Request-Method': 'PUT',
+                ...(csrfToken && { 'X-CSRFToken': csrfToken }),
                 ...options.headers,
             },
         }

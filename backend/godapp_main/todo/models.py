@@ -26,7 +26,7 @@ class TodoItem(models.Model):
     due_date = models.DateTimeField(null=True, blank=True)
     notification_sent = models.BooleanField(default=False)
     notification_queued = models.BooleanField(default=False)
-
+    description = models.TextField(blank=True)
     column = models.CharField(
         max_length=20,
         choices=KanbanColumn.choices,

@@ -7,6 +7,17 @@ interface AuthTokens {
 class AuthService {
     private readonly IS_AUTHENTICATED_KEY = 'isAuthenticated'
 
+    async initializeCsrf(): Promise<void> {
+        try {
+            await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/csrf/`, {
+                method: 'GET',
+                credentials: 'include',
+            })
+        } catch (error) {
+            console.error('Failed to initialize CSRF token:', error)
+        }
+    }
+
     isAuthenticated(): boolean {
         return localStorage.getItem(this.IS_AUTHENTICATED_KEY) === 'true'
     }

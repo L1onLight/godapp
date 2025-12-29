@@ -16,7 +16,14 @@ class TodoCreateSchema(ModelSchema):
 
     class Meta:
         model = TodoItem
-        fields = ["title", "due_date", "is_completed", "column", "column_order"]
+        fields = [
+            "title",
+            "description",
+            "due_date",
+            "is_completed",
+            "column",
+            "column_order",
+        ]
         exclude_fields = ["user_id"]
 
 
@@ -26,6 +33,7 @@ class TodoListSchema(ModelSchema):
         fields = [
             "id",
             "title",
+            "description",
             "due_date",
             "is_completed",
             "column",
