@@ -65,7 +65,7 @@ class ConfigSettings(BaseSettings):
     SECRET_KEY: str
     ENCRYPTION_KEY: SecretStr
     DEBUG: bool = False
-    ALLOWED_HOSTS: list[str] = []
+    ALLOWED_HOSTS: list[str] = ["*"]
     DB: DatabaseSettings = DatabaseSettings()
     REDIS: RedisSettings = RedisSettings()
     model_config = SettingsConfigDict(
