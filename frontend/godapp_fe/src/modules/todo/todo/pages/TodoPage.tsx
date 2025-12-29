@@ -1,10 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchTodos, type TodoItem, type TodoStatus } from '../api/todo.api'
+import { fetchTodos, type TodoItem, type TodoColumn } from '../api/todo.api'
 
-const statusLabels: Record<TodoStatus, string> = {
-  'todo': 'Backlog',
-  'in-progress': 'In progress',
-  'done': 'Done',
+function formatDateTime(value?: string | Date) {
+  if (!value) return '—'
+  const d = typeof value === 'string' ? new Date(value) : value
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  return `${dd}.${mm}.${yyyy} ${hh}:${mi}`
+}
+
+const columnLabels: Record<TodoColumn, string> = {
+  'UNASSIGNED': 'Unassigned',
+  'TO_DO': 'To Do',
+  'IN_PROGRESS': 'In progress',
+  'DONE': 'Done',
+  'ARCHIVED': 'Archived',
 }
 
 function TodoPage() {
@@ -16,12 +29,17 @@ function TodoPage() {
 
   const columns = useMemo(
     () => ({
-      'todo': todos.filter((item) => item.status === 'todo'),
-      'in-progress': todos.filter((item) => item.status === 'in-progress'),
-      'done': todos.filter((item) => item.status === 'done'),
+      'UNASSIGNED': todos.filter((item) => item.column === 'UNASSIGNED'),
+      'TO_DO': todos.filter((item) => item.column === 'TO_DO'),
+      'IN_PROGRESS': todos.filter((item) => item.column === 'IN_PROGRESS'),
+      'DONE': todos.filter((item) => item.column === 'DONE'),
+      'ARCHIVED': todos.filter((item) => item.column === 'ARCHIVED'),
     }),
     [todos],
   )
+  useEffect(() => {
+    console.log(todos)
+  }, [todos])
 
   return (
     <div className="todo-page">
@@ -46,16 +64,14 @@ function TodoPage() {
             <div className="table">
               <div className="table-head">
                 <span>Title</span>
-                <span>Status</span>
-                <span>Assignee</span>
+                <span>Column</span>
                 <span>Due</span>
               </div>
               {todos.map((item) => (
                 <div key={item.id} className="table-row">
                   <span>{item.title}</span>
-                  <span className="pill" data-status={item.status}>{statusLabels[item.status]}</span>
-                  <span>{item.assignee ?? '—'}</span>
-                  <span>{item.dueDate ?? '—'}</span>
+                  <span className="pill" data-column={item.column}>{columnLabels[item.column]}</span>
+                  <span>{item.due_date ? formatDateTime(item.due_date) : '—'}</span>
                 </div>
               ))}
               {todos.length === 0 && (
@@ -74,20 +90,19 @@ function TodoPage() {
             <button className="ghost-button" type="button">Add column</button>
           </div>
           <div className="kanban">
-            {Object.entries(columns).map(([status, items]) => (
-              <div key={status} className="kanban-column">
+            {Object.entries(columns).map(([column, items]) => (
+              <div key={column} className="kanban-column">
                 <div className="kanban-column-header">
-                  <span>{statusLabels[status as TodoStatus]}</span>
+                  <span>{columnLabels[column as TodoColumn]}</span>
                   <span className="count">{items.length}</span>
                 </div>
                 <div className="kanban-column-body">
                   {items.map((item) => (
                     <article key={item.id} className="kanban-card">
                       <p className="kanban-title">{item.title}</p>
-                      <p className="kanban-meta">
-                        {item.assignee ? `Owner: ${item.assignee}` : 'Unassigned'}
-                      </p>
-                      {item.dueDate && <p className="kanban-meta">Due {item.dueDate}</p>}
+                      {item.due_date && (
+                        <p className="kanban-meta">Due {formatDateTime(item.due_date)}</p>
+                      )}
                     </article>
                   ))}
                   {items.length === 0 && (

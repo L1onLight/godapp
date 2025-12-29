@@ -1,0 +1,12 @@
+x-frontend-defaults: &frontend-defaults
+  build:
+    context: ../frontend/godapp_fe
+  volumes:
+    - ../frontend/godapp_fe:/frontend/godapp_fe
+  networks: [backend]
+
+services:
+  godapp_frontend:
+    <<: *frontend-defaults
+    ports:
+      - "127.0.0.1:5173:5173"
