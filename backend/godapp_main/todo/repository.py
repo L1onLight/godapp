@@ -14,6 +14,11 @@ class TodoItemRepository:
         pass
 
     @classmethod
+    def get_todo_by_ids(cls, user_id: int, ids: list[int]):
+        rs = cls._model.objects.filter(user__id=user_id, id__in=ids).all()
+        return rs
+
+    @classmethod
     def get_user_todo_items(cls, user_id: int) -> QuerySet["TodoItem"]:
         rs = cls._model.objects.filter(user__id=user_id).all()
         print(rs, user_id)

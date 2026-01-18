@@ -1,4 +1,4 @@
-from ninja import ModelSchema
+from ninja import ModelSchema, Schema
 
 from todo.models import TodoItem
 
@@ -40,3 +40,18 @@ class TodoListSchema(ModelSchema):
             "column_order",
             "created_at",
         ]
+
+
+class TodoUpdateSchema(Schema):
+    title: str | None = None
+    description: str | None = None
+    due_date: str | None = None
+    is_completed: bool | None = None
+    column: str | None = None
+    column_order: int | None = None
+
+
+class ReorderItemSchema(Schema):
+    id: int
+    column_order: int
+    column: str

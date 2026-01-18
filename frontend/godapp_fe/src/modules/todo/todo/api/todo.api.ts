@@ -32,6 +32,12 @@ export type TodoUpdateInput = Partial<{
   is_completed: boolean
 }>
 
+export type TodoReorderInput = {
+  id: number
+  column_order: number
+  column: TodoColumn
+}
+
 export async function fetchTodos(): Promise<TodoItem[]> {
   return apiClient.get<TodoItem[]>('/todo/')
 }
@@ -55,4 +61,8 @@ export async function archiveTodo(id: number): Promise<void> {
 
 export async function deleteTodo(id: number): Promise<void> {
   await apiClient.delete<void>(`/todo/${id}/delete/`)
+}
+
+export async function reorderTodos(items: TodoReorderInput[]): Promise<void> {
+  return apiClient.post<void>('/todo/reorder/', items)
 }

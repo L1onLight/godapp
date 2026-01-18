@@ -5,7 +5,7 @@ class ApiClient {
     private baseURL: string
     private isRefreshing = false
     private failedQueue: Array<{
-        resolve: () => void
+        resolve: (value?: unknown) => void
         reject: (error: Error) => void
     }> = []
 
@@ -78,7 +78,7 @@ class ApiClient {
                 response = await fetch(`${this.baseURL}${endpoint}`, config)
             } catch (error) {
                 this.processQueue(error as Error)
-                authService.logout()
+                authService.logout(authService.getCurrentPath())
                 throw error
             } finally {
                 this.isRefreshing = false
@@ -88,7 +88,7 @@ class ApiClient {
         if (!response.ok) {
             // Handle 401 Unauthorized
             if (response.status === 401) {
-                authService.logout()
+                authService.logout(authService.getCurrentPath())
                 return Promise.reject(new Error('Unauthorized - please login again'))
             }
 

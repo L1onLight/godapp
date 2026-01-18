@@ -22,11 +22,12 @@ from django.contrib import admin
 from django.urls import path
 from ninja import NinjaAPI
 from todo.api.views import todo_router
+from vault.views import vault_router
 
 ninja_api = NinjaAPI()
 ninja_api.add_router("/auth/", base_router)
 ninja_api.add_router("/todo/", todo_router)
-
+ninja_api.add_router("/vault/", vault_router)
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", ninja_api.urls),

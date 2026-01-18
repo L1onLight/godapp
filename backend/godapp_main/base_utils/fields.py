@@ -13,3 +13,16 @@ class FernetEncryptedCharField(models.CharField):
         if value is None or CipherManager.is_encrypted(value):
             return value
         return CipherManager.encrypt(value)
+
+
+class FernetEncryptedJSONField(models.JSONField):
+    """
+    A JSONField that encrypts its value before saving to the database
+    and decrypts it when retrieving from the database.
+    """
+
+    def get_prep_value(self, value):
+        if value is None or CipherManager.is_encrypted(value):
+            return value
+        json_str = super().get_prep_value(value)
+        return CipherManager.encrypt(json_str)

@@ -5,16 +5,16 @@ services:
       - ../backend/.env.postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "15432:5432"
+    # ports:
+    #   - "15432:5432"
     networks: [backend]
 
   redis:
     image: redis:7-alpine
     env_file:
       - ../backend/.env.redis
-    ports:
-      - "16379:6379"
+    # ports:
+    #   - "16379:6379"
     networks: [backend]
 
 volumes:

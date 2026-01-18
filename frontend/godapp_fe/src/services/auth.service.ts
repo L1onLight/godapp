@@ -1,22 +1,5 @@
-// services/auth.service.ts
-interface AuthTokens {
-    accessToken: string
-    refreshToken?: string
-}
-
 class AuthService {
     private readonly IS_AUTHENTICATED_KEY = 'isAuthenticated'
-
-    async initializeCsrf(): Promise<void> {
-        try {
-            await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/csrf/`, {
-                method: 'GET',
-                credentials: 'include',
-            })
-        } catch (error) {
-            console.error('Failed to initialize CSRF token:', error)
-        }
-    }
 
     isAuthenticated(): boolean {
         return localStorage.getItem(this.IS_AUTHENTICATED_KEY) === 'true'
@@ -34,9 +17,15 @@ class AuthService {
         this.setAuthenticated(false)
     }
 
-    logout(): void {
+    getCurrentPath(): string {
+        return `${window.location.pathname}${window.location.search}`
+    }
+
+    logout(backTo?: string | null): void {
         this.clearTokens()
-        window.location.href = '/login'
+        const target = backTo && backTo.startsWith('/') ? backTo : undefined
+        const qs = target ? `?back=${encodeURIComponent(target)}` : ''
+        window.location.href = `/login${qs}`
     }
 
     async refreshAccessToken(): Promise<void> {
@@ -51,8 +40,6 @@ class AuthService {
             this.clearTokens()
             throw new Error('Token refresh failed')
         }
-
-        // Cookies are automatically handled by the browser with credentials: 'include'
         return
     }
 }
