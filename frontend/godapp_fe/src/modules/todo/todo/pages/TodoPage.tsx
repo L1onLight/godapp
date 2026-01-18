@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+// Removed unused Input/Label imports after refactor
 import { Plus, Calendar } from 'lucide-react'
-import { fetchTodos, createTodo, updateTodo, type TodoColumn, type TodoItem } from '../api/todo.api'
+import { fetchTodos, updateTodo, type TodoColumn, type TodoItem } from '../api/todo.api'
+import { TaskWindow } from './TaskWindow'
+import { CreateTaskWindow } from '../components/CreateTaskWindow'
 
 
 function formatDateTime(value?: string | Date) {
@@ -25,13 +26,12 @@ function getItemDateColor(item: TodoItem): string {
   if (item.is_completed || !item.due_date) return ''
   const now = new Date()
   const dueDate = new Date(item.due_date)
-  if (dueDate < now) {
+  if (dueDate < now && item.column !== "ARCHIVED") {
     return '!text-destructive'
   }
   const diffMs = dueDate.getTime() - now.getTime()
   const diffMins = diffMs / (1000 * 60)
-  console.log(diffMins)
-  if (diffMins <= 30) {
+  if (diffMins <= 30 && item.column !== "ARCHIVED") {
     return '!text-yellow-600'
   }
   return ''
@@ -49,16 +49,9 @@ function TodoPage() {
   const [todos, setTodos] = useState<TodoItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newDescription, setNewDescription] = useState('')
-  const [newColumn, setNewColumn] = useState<TodoColumn>('UNASSIGNED')
-  const [newDueDate, setNewDueDate] = useState<string>('')
+  // Creation handled via CreateTaskWindow
 
   const [selected, setSelected] = useState<TodoItem | null>(null)
-  const [editTitle, setEditTitle] = useState<string>('')
-  const [editDescription, setEditDescription] = useState<string>('')
-  const [editColumn, setEditColumn] = useState<TodoColumn>('UNASSIGNED')
-  const [editDueDate, setEditDueDate] = useState<string>('')
 
   useEffect(() => {
     fetchTodos().then((data) => {
@@ -69,59 +62,15 @@ function TodoPage() {
 
 
 
-  function resetAddForm() {
-    setNewTitle('')
-    setNewDescription('')
-    setNewColumn('UNASSIGNED')
-    setNewDueDate('')
-  }
-
-  async function handleAddTodo() {
-    if (!newTitle.trim()) return
-    const payload = {
-      title: newTitle.trim(),
-      description: newDescription.trim() || undefined,
-      column: newColumn,
-      due_date: newDueDate ? new Date(newDueDate).toISOString() : null,
-    }
-    const created = await createTodo(payload)
-    setTodos((prev) => [created, ...prev])
-    resetAddForm()
-    setShowAdd(false)
-  }
+  // Creation handled via CreateTaskWindow
 
   function openEditor(item: TodoItem) {
     setSelected(item)
-    setEditTitle(item.title)
-    setEditDescription(item.description || '')
-    setEditColumn(item.column)
-    setEditDueDate(item.due_date ? toLocalInputDate(item.due_date) : '')
   }
 
-  function toLocalInputDate(value: string) {
-    // Convert ISO string to yyyy-MM-ddTHH:mm for input[type="datetime-local"]
-    const d = new Date(value)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const yyyy = d.getFullYear()
-    const mm = pad(d.getMonth() + 1)
-    const dd = pad(d.getDate())
-    const hh = pad(d.getHours())
-    const mi = pad(d.getMinutes())
-    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`
-  }
+  // Edit form states removed; editing handled inside TaskWindow
 
-  async function handleSaveEdit() {
-    if (!selected) return
-    const payload = {
-      title: editTitle.trim(),
-      description: editDescription.trim() || undefined,
-      column: editColumn,
-      due_date: editDueDate ? new Date(editDueDate).toISOString() : null,
-    }
-    const updated = await updateTodo(selected.id, payload)
-    setTodos((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)))
-    setSelected(null)
-  }
+  // Removed unused handleSaveEdit after refactor; edits handled in TaskWindow
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -150,52 +99,13 @@ function TodoPage() {
             ) : (
               <div className="space-y-2">
                 {showAdd && (
-                  <div className="p-4 border rounded-md space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label htmlFor="new-title">Title</Label>
-                        <Input id="new-title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="new-column">Column</Label>
-                        <select
-                          id="new-column"
-                          className="h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                          value={newColumn}
-                          onChange={(e) => setNewColumn(e.target.value as TodoColumn)}
-                        >
-                          <option value="UNASSIGNED">Unassigned</option>
-                          <option value="TO_DO">To Do</option>
-                          <option value="IN_PROGRESS">In Progress</option>
-                          <option value="DONE">Done</option>
-                          <option value="ARCHIVED">Archived</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <Label htmlFor="new-description">Description</Label>
-                        <textarea
-                          id="new-description"
-                          className="h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-                          value={newDescription}
-                          onChange={(e) => setNewDescription(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <Label htmlFor="new-due">Due date</Label>
-                        <input
-                          id="new-due"
-                          type="datetime-local"
-                          className="h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                          value={newDueDate}
-                          onChange={(e) => setNewDueDate(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" onClick={() => { resetAddForm(); setShowAdd(false) }}>Cancel</Button>
-                      <Button onClick={handleAddTodo}>Create</Button>
-                    </div>
-                  </div>
+                  <CreateTaskWindow
+                    initialColumn={'UNASSIGNED'}
+                    onClose={() => setShowAdd(false)}
+                    onCreate={(created) => {
+                      setTodos(prev => [created, ...prev])
+                    }}
+                  />
                 )}
                 <div className="grid grid-cols-3 gap-4 pb-2 p-3 border-b text-sm font-medium text-muted-foreground">
                   <span>Title</span>
@@ -221,61 +131,28 @@ function TodoPage() {
                 {todos.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">No todos yet.</div>
                 )}
-
-                {selected && (
-                  <div className="mt-4 p-4 border rounded-md space-y-3">
-                    <div className="text-sm font-medium text-muted-foreground">Edit Todo</div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label htmlFor="edit-title">Title</Label>
-                        <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="edit-column">Column</Label>
-                        <select
-                          id="edit-column"
-                          className="h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                          value={editColumn}
-                          onChange={(e) => setEditColumn(e.target.value as TodoColumn)}
-                        >
-                          <option value="UNASSIGNED">Unassigned</option>
-                          <option value="TO_DO">To Do</option>
-                          <option value="IN_PROGRESS">In Progress</option>
-                          <option value="DONE">Done</option>
-                          <option value="ARCHIVED">Archived</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <Label htmlFor="edit-description">Description</Label>
-                        <textarea
-                          id="edit-description"
-                          className="h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-                          value={editDescription}
-                          onChange={(e) => setEditDescription(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <Label htmlFor="edit-due">Due date</Label>
-                        <input
-                          id="edit-due"
-                          type="datetime-local"
-                          className="h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                          value={editDueDate}
-                          onChange={(e) => setEditDueDate(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
-                      <Button onClick={handleSaveEdit}>Save</Button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </CardContent>
         </Card>
       </section>
+
+      {/* Task Detail Modal */}
+      {selected && (
+        <TaskWindow
+          task={selected}
+          onClose={() => setSelected(null)}
+          onUpdate={(updated) => {
+            setTodos(prev => prev.map(t => t.id === updated.id ? updated : t))
+            setSelected(updated)
+          }}
+          onArchive={async (item) => {
+            await updateTodo(item.id, { column: 'ARCHIVED' })
+            setTodos(prev => prev.map(t => t.id === item.id ? { ...t, column: 'ARCHIVED' } : t))
+            setSelected(null)
+          }}
+        />
+      )}
 
     </div>
   )

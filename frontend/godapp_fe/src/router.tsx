@@ -1,9 +1,10 @@
-import { RootRoute, Route, Router } from '@tanstack/react-router'
+import { RootRoute, Route, Router, redirect } from '@tanstack/react-router'
 import App from './App'
 import AuthPage from './pages/AuthPage'
 import TodoPage from './modules/todo/todo/pages/TodoPage'
 import MainLayout from './layouts/MainLayout'
 import KanbanPage from './modules/todo/todo/pages/KanbanPage'
+import { authService } from './services/auth.service'
 
 class TodoUrls {
     static todoList = '/todo'
@@ -26,6 +27,12 @@ const authRoute = new Route({
 const todoRoute = new Route({
     getParentRoute: () => rootRoute,
     path: TodoUrls.todoList,
+    beforeLoad: ({ location }) => {
+        if (!authService.isAuthenticated()) {
+            const back = `${location.pathname}${location.search ?? ''}`
+            throw redirect({ to: '/login', search: { back } })
+        }
+    },
     component: () => {
         const modules = [{ label: 'Todos', href: TodoUrls.todoList, active: true }]
         const sidebar = [
@@ -48,6 +55,12 @@ const todoRoute = new Route({
 const todoKanbanRoute = new Route({
     getParentRoute: () => rootRoute,
     path: TodoUrls.todoKanban,
+    beforeLoad: ({ location }) => {
+        if (!authService.isAuthenticated()) {
+            const back = `${location.pathname}${location.search ?? ''}`
+            throw redirect({ to: '/login', search: { back } })
+        }
+    },
     component: () => {
         const modules = [{ label: 'Todos', href: TodoUrls.todoKanban, active: true }]
         const sidebar = [
@@ -71,6 +84,12 @@ const todoKanbanRoute = new Route({
 const indexRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/',
+    beforeLoad: ({ location }) => {
+        if (!authService.isAuthenticated()) {
+            const back = `${location.pathname}${location.search ?? ''}`
+            throw redirect({ to: '/login', search: { back } })
+        }
+    },
     component: () => {
         const modules = [{ label: 'Todos', href: TodoUrls.todoList, active: true }]
         const sidebar = [

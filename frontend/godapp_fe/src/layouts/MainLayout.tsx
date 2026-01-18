@@ -1,8 +1,11 @@
-import { ReactNode } from 'react'
+// src/layouts/MainLayout.tsx
+import { type ReactNode, useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ThemeSelector } from '@/components/ThemeSelector'
-
+import { ChevronLeft, ChevronRight, LayoutDashboard, ListTodo, Settings, LogOut } from 'lucide-react'
+import { authService } from '@/services/auth.service'
+import { PopupStack } from '@/components/ui/popup-stack'
 interface ModuleLink {
   label: string
   href: string
@@ -20,38 +23,30 @@ interface MainLayoutProps {
   children: ReactNode
 }
 
-function GearIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="3.25" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 15a1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 3.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-    </svg>
-  )
-}
 
 function MainLayout({ modules, sidebar, children }: MainLayoutProps) {
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    const raw = localStorage.getItem('sidebar-collapsed')
+    return raw ? JSON.parse(raw) : false
+  })
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed))
+  }, [collapsed])
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Card className="rounded-none border-b">
-        <CardContent className="flex items-center gap-4 justify-between">
-          <div className="flex items-center gap-4">
-            <div className="text-xl font-semibold">Godapp</div>
-            <nav className="flex items-center gap-3" aria-label="Modules">
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Top Header */}
+      <Card className="rounded-none border-b shadow-none z-10">
+        <CardContent className="h-14 flex items-center gap-4 justify-between py-0">
+          <div className="flex items-center gap-8">
+            <div className="text-xl font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded">G</div>
+            <nav className="hidden md:flex items-center gap-6" aria-label="Modules">
               {modules.map((module) => (
                 <a
                   key={module.href}
                   href={module.href}
-                  className={module.active ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'}
+                  className={`text-sm transition-colors ${module.active ? 'text-foreground font-semibold underline underline-offset-4' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                   {module.label}
                 </a>
@@ -60,31 +55,69 @@ function MainLayout({ modules, sidebar, children }: MainLayoutProps) {
           </div>
           <div className="flex items-center gap-3">
             <ThemeSelector />
-            <Button type="button" size="icon" variant="outline" aria-label="Settings">
-              <GearIcon />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => authService.logout(authService.getCurrentPath())}
+            >
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex flex-1">
-        <aside className="w-64 border-r p-4 space-y-6" aria-label="Module sections">
-          {sidebar.map((section) => (
-            <div key={section.title} className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">{section.title}</p>
-              <div className="flex flex-col gap-1">
-                {section.items.map((item) => (
-                  <a key={item.href} href={item.href} className="text-sm hover:text-primary">
-                    {item.label}
-                  </a>
-                ))}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Persistent Sidebar */}
+        <aside
+          className={`transition-all duration-300 border-r bg-muted/10 flex flex-col ${collapsed ? 'w-16' : 'w-64'}`}
+          aria-label="Sidebar"
+        >
+          <div className="p-3 border-b flex justify-end">
+            <Button variant="ghost" size="icon-sm" onClick={() => setCollapsed(!collapsed)}>
+              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-6">
+            {sidebar.map((section) => (
+              <div key={section.title} className="space-y-2">
+                {!collapsed && (
+                  <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                    {section.title}
+                  </p>
+                )}
+                <div className="flex flex-col gap-1">
+                  {section.items.map((item) => (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      title={item.label}
+                      className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                    >
+                      {item.label.includes('Kanban') ? <LayoutDashboard size={18} /> : <ListTodo size={18} />}
+                      {!collapsed && <span>{item.label}</span>}
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <div className="p-3 border-t">
+            <Button variant="ghost" className={`w-full justify-start ${collapsed ? 'px-2' : ''}`}>
+              <Settings size={18} />
+              {!collapsed && <span className="ml-3">Settings</span>}
+            </Button>
+          </div>
         </aside>
 
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-background">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
       </div>
+      <PopupStack />
     </div>
   )
 }

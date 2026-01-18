@@ -1,336 +1,395 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+// src/modules/todo/todo/pages/KanbanPage.tsx
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Plus, Calendar } from 'lucide-react'
-import { fetchTodos, createTodo, updateTodo, type TodoColumn, type TodoItem } from '../api/todo.api'
+// Removed unused Input/Label imports after refactor
+import { Plus, Calendar, Archive, GripVertical } from 'lucide-react'
+import { fetchTodos, updateTodo, reorderTodos, type TodoColumn, type TodoItem } from '../api/todo.api'
+import { TaskWindow } from './TaskWindow'
+import { CreateTaskWindow } from '../components/CreateTaskWindow'
+import { useTimedPopup } from '@/components/ui/timed-popup'
+
+// DND Kit Imports
+import {
+    DndContext,
+    DragOverlay,
+    KeyboardSensor,
+    PointerSensor,
+    pointerWithin,
+    useDroppable,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+    type DragStartEvent,
+} from '@dnd-kit/core'
+import {
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
+/**
+ * Sortable Item Component
+ */
+function SortableTodoCard({ item, onClick, onColumnChange }: {
+    item: TodoItem;
+    onClick: () => void;
+    onColumnChange: (id: number, col: TodoColumn) => void
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: item.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <Card
+            ref={setNodeRef}
+            style={style}
+            className="hover:shadow-md transition-shadow group relative"
+        >
+            <CardContent className="p-4 space-y-3">
+                <Archive className="h-5 w-5 absolute top-2 right-2 text-muted-foreground cursor-pointer hover:text-foreground"
+                    onClick={() => onColumnChange(item.id, 'ARCHIVED')} />
+
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1">
+                        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                            <GripVertical className="h-4 w-4" />
+                        </div>
+                        <p className="font-medium text-sm leading-snug cursor-pointer flex-1" onClick={onClick}>
+                            {item.title}
+                        </p>
+                    </div>
+                </div>
 
 
-function formatDateTime(value?: string | Date) {
-    if (!value) return '—'
-    const d = typeof value === 'string' ? new Date(value) : value
-    const dd = String(d.getDate()).padStart(2, '0')
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const yyyy = d.getFullYear()
-    const hh = String(d.getHours()).padStart(2, '0')
-    const mi = String(d.getMinutes()).padStart(2, '0')
-    return `${dd}.${mm}.${yyyy} ${hh}:${mi}`
+                <div className="flex items-center justify-between gap-2">
+
+                    <select
+                        className="h-7 rounded-md border bg-transparent px-1 py-0 text-[10px] hidden"
+                        value={item.column}
+                        onChange={(e) => onColumnChange(item.id, e.target.value as TodoColumn)}
+                    >
+
+                        {['UNASSIGNED', 'TO_DO', 'IN_PROGRESS', 'DONE', 'ARCHIVED'].map(c => (
+                            <option key={c} value={c}>{c}</option>
+                        ))}
+                    </select>
+
+                    {item.due_date && (
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(item.due_date).toLocaleDateString()}
+                        </p>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
 }
 
-const columnConfig: Record<TodoColumn, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-    'UNASSIGNED': { label: 'Unassigned', variant: 'outline' },
-    'TO_DO': { label: 'To Do', variant: 'secondary' },
-    'IN_PROGRESS': { label: 'In Progress', variant: 'default' },
-    'DONE': { label: 'Done', variant: 'outline' },
-    'ARCHIVED': { label: 'Archived', variant: 'secondary' },
+const columnConfig: Record<Exclude<TodoColumn, 'ARCHIVED'>, { label: string }> = {
+    'UNASSIGNED': { label: 'Unassigned' },
+    'TO_DO': { label: 'To Do' },
+    'IN_PROGRESS': { label: 'In Progress' },
+    'DONE': { label: 'Done' },
+}
+
+function ColumnDroppable({ columnId, children }: { columnId: TodoColumn; children: ReactNode }) {
+    const { setNodeRef, isOver } = useDroppable({ id: columnId })
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`bg-muted/30 p-2 rounded-lg min-h-[500px] border border-dashed transition ring-primary/40 ${isOver ? 'ring-2 border-primary/50' : 'ring-0'}`}
+        >
+            {children}
+        </div>
+    )
 }
 
 function KanbanPage() {
     const [todos, setTodos] = useState<TodoItem[]>([])
     const [showAdd, setShowAdd] = useState(false)
-    const [newTitle, setNewTitle] = useState('')
-    const [newDescription, setNewDescription] = useState('')
-    const [newColumn, setNewColumn] = useState<TodoColumn>('UNASSIGNED')
-    const [newDueDate, setNewDueDate] = useState<string>('')
-
     const [selected, setSelected] = useState<TodoItem | null>(null)
-    const [editTitle, setEditTitle] = useState<string>('')
-    const [editDescription, setEditDescription] = useState<string>('')
-    const [editColumn, setEditColumn] = useState<TodoColumn>('UNASSIGNED')
-    const [editDueDate, setEditDueDate] = useState<string>('')
+    const [activeId, setActiveId] = useState<number | null>(null)
+    const { showPopup, removePopup } = useTimedPopup()
 
-    useEffect(() => {
-        fetchTodos().then((data) => {
-            setTodos(data)
+    // Creation modal state handled via CreateTaskWindow
 
-        })
-    }, [])
-
-    const columns = useMemo(
-        () => ({
-            'UNASSIGNED': todos.filter((item) => item.column === 'UNASSIGNED').sort((a, b) => a.column_order - b.column_order),
-            'TO_DO': todos.filter((item) => item.column === 'TO_DO').sort((a, b) => a.column_order - b.column_order),
-            'IN_PROGRESS': todos.filter((item) => item.column === 'IN_PROGRESS').sort((a, b) => a.column_order - b.column_order),
-            'DONE': todos.filter((item) => item.column === 'DONE').sort((a, b) => a.column_order - b.column_order),
-            'ARCHIVED': todos.filter((item) => item.column === 'ARCHIVED').sort((a, b) => a.column_order - b.column_order),
-        }),
-        [todos],
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     )
 
-    function resetAddForm() {
-        setNewTitle('')
-        setNewDescription('')
-        setNewColumn('UNASSIGNED')
-        setNewDueDate('')
+    useEffect(() => {
+        fetchTodos().then(setTodos)
+    }, [])
+
+    const boardColumns = ['UNASSIGNED', 'TO_DO', 'IN_PROGRESS', 'DONE'] as const;
+
+    const isBoardColumn = (id: string): id is (typeof boardColumns)[number] =>
+        boardColumns.includes(id as (typeof boardColumns)[number])
+
+    const categorized = useMemo(() => ({
+        board: boardColumns.reduce((acc, col) => {
+            acc[col] = todos.filter(t => t.column === col).sort((a, b) => a.column_order - b.column_order)
+            return acc
+        }, {} as Record<string, TodoItem[]>),
+        archived: todos.filter(t => t.column === 'ARCHIVED').sort((a, b) => b.id - a.id)
+    }), [todos])
+
+    function handleDragStart(event: DragStartEvent) {
+        const { active } = event
+        setActiveId(typeof active.id === 'number' ? active.id : null)
     }
 
-    async function handleAddTodo() {
-        if (!newTitle.trim()) return
-        const payload = {
-            title: newTitle.trim(),
-            description: newDescription.trim() || undefined,
-            column: newColumn,
-            due_date: newDueDate ? new Date(newDueDate).toISOString() : null,
-        }
-        const created = await createTodo(payload)
-        setTodos((prev) => [created, ...prev])
-        resetAddForm()
-        setShowAdd(false)
-    }
+    async function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event
+        setActiveId(null)
+        if (!over) return
 
-    function openEditor(item: TodoItem) {
-        setSelected(item)
-        setEditTitle(item.title)
-        setEditDescription(item.description || '')
-        setEditColumn(item.column)
-        setEditDueDate(item.due_date ? toLocalInputDate(item.due_date) : '')
-    }
+        const activeItem = todos.find(t => t.id === active.id)
+        if (!activeItem) return
 
-    function toLocalInputDate(value: string) {
-        const d = new Date(value)
-        const pad = (n: number) => String(n).padStart(2, '0')
-        const yyyy = d.getFullYear()
-        const mm = pad(d.getMonth() + 1)
-        const dd = pad(d.getDate())
-        const hh = pad(d.getHours())
-        const mi = pad(d.getMinutes())
-        return `${yyyy}-${mm}-${dd}T${hh}:${mi}`
-    }
+        const overItem = todos.find(t => t.id === over.id)
+        const overColumn = (typeof over.id === 'string' && isBoardColumn(over.id))
+            ? over.id
+            : overItem?.column
 
-    async function handleSaveEdit() {
-        if (!selected) return
-        const payload = {
-            title: editTitle.trim(),
-            description: editDescription.trim() || undefined,
-            column: editColumn,
-            due_date: editDueDate ? new Date(editDueDate).toISOString() : null,
-        }
-        const updated = await updateTodo(selected.id, payload)
-        setTodos((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)))
-        setSelected(null)
-    }
+        if (!overColumn || !isBoardColumn(overColumn)) return
 
-    function findNeighbors(item: TodoItem) {
-        const list = todos
-            .filter((t) => t.column === item.column)
-            .sort((a, b) => a.column_order - b.column_order)
-        const idx = list.findIndex((t) => t.id === item.id)
-        return { list, idx, prev: idx > 0 ? list[idx - 1] : null, next: idx < list.length - 1 ? list[idx + 1] : null }
-    }
+        const columns = boardColumns.reduce((acc, col) => {
+            acc[col] = todos.filter(t => t.column === col && t.id !== activeItem.id)
+            return acc
+        }, {} as Record<(typeof boardColumns)[number], TodoItem[]>)
 
-    async function moveUp(item: TodoItem) {
-        const { prev } = findNeighbors(item)
-        if (!prev) return
-        const a = await updateTodo(item.id, { column_order: prev.column_order })
-        const b = await updateTodo(prev.id, { column_order: item.column_order })
-        setTodos((prevState) => prevState.map((t) => {
-            if (t.id === a.id) return { ...t, column_order: a.column_order }
-            if (t.id === b.id) return { ...t, column_order: b.column_order }
-            return t
-        }))
-    }
+        const targetList = columns[overColumn]
+        const insertIndex = overItem
+            ? Math.max(targetList.findIndex(t => t.id === overItem.id), 0)
+            : targetList.length
 
-    async function moveDown(item: TodoItem) {
-        const { next } = findNeighbors(item)
-        if (!next) return
-        const a = await updateTodo(item.id, { column_order: next.column_order })
-        const b = await updateTodo(next.id, { column_order: item.column_order })
-        setTodos((prevState) => prevState.map((t) => {
-            if (t.id === a.id) return { ...t, column_order: a.column_order }
-            if (t.id === b.id) return { ...t, column_order: b.column_order }
-            return t
-        }))
-    }
+        targetList.splice(insertIndex, 0, { ...activeItem, column: overColumn })
 
-    async function moveToColumn(item: TodoItem, target: TodoColumn) {
-        if (item.column === target) return
-        const maxOrder = Math.max(
-            0,
-            ...todos.filter((t) => t.column === target).map((t) => t.column_order)
+        const updatedBoard = boardColumns.flatMap(col =>
+            columns[col].map((item, idx) => ({ ...item, column_order: idx }))
         )
-        const updated = await updateTodo(item.id, { column: target, column_order: maxOrder + 1 })
-        setTodos((prevState) => prevState.map((t) => t.id === item.id ? { ...t, column: updated.column, column_order: updated.column_order } : t))
+
+        setTodos([
+            ...updatedBoard,
+            ...todos.filter(t => t.column === 'ARCHIVED')
+        ])
+
+        await reorderTodos(updatedBoard.map(item => ({
+            id: item.id,
+            column: item.column,
+            column_order: item.column_order
+        })))
     }
+
+    function handleDragCancel() {
+        setActiveId(null)
+    }
+
+    async function moveToColumn(id: number, target: TodoColumn) {
+        const updated = await updateTodo(id, { column: target })
+        setTodos(prev => prev.map(t => t.id === id ? updated : t))
+    }
+
+    async function handleArchive(item: TodoItem) {
+        const undoData = { item, column: item.column, order: item.column_order }
+
+        await updateTodo(item.id, { column: 'ARCHIVED' })
+        setTodos(prev => prev.map(t => t.id === item.id ? { ...t, column: 'ARCHIVED' } : t))
+
+        showUndoPopup(undoData)
+    }
+
+    type UndoData = { item: TodoItem; column: TodoColumn; order: number }
+
+    async function restoreFromPopup(undoData: UndoData, popupId: string) {
+        await updateTodo(undoData.item.id, {
+            column: undoData.column,
+            column_order: undoData.order
+        })
+        setTodos(prev => prev.map(t =>
+            t.id === undoData.item.id ? { ...t, column: undoData.column, column_order: undoData.order } : t
+        ))
+        removePopup(popupId)
+    }
+
+    function showUndoPopup(undoData: UndoData) {
+        let popupId = ''
+        popupId = showPopup({
+            position: 'top-right',
+            durationMs: 6000,
+            title: undoData.item.title,
+            description: `Archived · ${columnConfig[undoData.column as Exclude<TodoColumn, 'ARCHIVED'>]?.label || undoData.column}`,
+            actions: (
+                <>
+                    <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => {
+                            void restoreFromPopup(undoData, popupId)
+                        }}
+                        className="flex-1"
+                    >
+                        Undo
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removePopup(popupId)}
+                        className="px-2"
+                    >
+                        Dismiss
+                    </Button>
+                </>
+            )
+        })
+    }
+
+    // Creation handled by CreateTaskWindow
 
     return (
-        <div className="container mx-auto p-6 space-y-8">
-            <header className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Module</p>
-                <h1 className="text-4xl font-bold tracking-tight">Todos</h1>
-                <p className="text-lg text-muted-foreground">Track tasks in list or Kanban view.</p>
+        <div className="container mx-auto p-6 space-y-10">
+            <header className="flex justify-between items-end">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight">Kanban Board</h1>
+                    <p className="text-muted-foreground">Drag and drop tasks to manage your workflow.</p>
+                </div>
+                <Button onClick={() => setShowAdd(!showAdd)}>
+                    <Plus className="mr-2 h-4 w-4" /> Add Task
+                </Button>
             </header>
 
+            {showAdd && (
+                <CreateTaskWindow
+                    initialColumn={'UNASSIGNED'}
+                    onClose={() => setShowAdd(false)}
+                    onCreate={(created) => {
+                        setTodos(prev => [created, ...prev])
+                    }}
+                />
+            )}
 
-
-            {/* Kanban View */}
-            <section className="space-y-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">View</p>
-                            <CardTitle>Kanban</CardTitle>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => setShowAdd((s) => !s)}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add todo
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        {showAdd && (
-                            <div className="mb-4 p-4 border rounded-md space-y-3">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <Label htmlFor="new-title">Title</Label>
-                                        <Input id="new-title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label htmlFor="new-column">Column</Label>
-                                        <select
-                                            id="new-column"
-                                            className="h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                                            value={newColumn}
-                                            onChange={(e) => setNewColumn(e.target.value as TodoColumn)}
-                                        >
-                                            <option value="UNASSIGNED">Unassigned</option>
-                                            <option value="TO_DO">To Do</option>
-                                            <option value="IN_PROGRESS">In Progress</option>
-                                            <option value="DONE">Done</option>
-                                            <option value="ARCHIVED">Archived</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1 md:col-span-2">
-                                        <Label htmlFor="new-description">Description</Label>
-                                        <textarea
-                                            id="new-description"
-                                            className="h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-                                            value={newDescription}
-                                            onChange={(e) => setNewDescription(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-1 md:col-span-2">
-                                        <Label htmlFor="new-due">Due date</Label>
-                                        <input
-                                            id="new-due"
-                                            type="datetime-local"
-                                            className="h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                                            value={newDueDate}
-                                            onChange={(e) => setNewDueDate(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 justify-end">
-                                    <Button variant="outline" onClick={() => { resetAddForm(); setShowAdd(false) }}>Cancel</Button>
-                                    <Button onClick={handleAddTodo}>Create</Button>
-                                </div>
+            <DndContext
+                sensors={sensors}
+                collisionDetection={pointerWithin}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {boardColumns.map(colId => (
+                        <div key={colId} className="flex flex-col gap-4">
+                            <div className="flex items-center justify-between px-1">
+                                <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">
+                                    {columnConfig[colId].label}
+                                </h2>
+                                <Badge variant="secondary">{categorized.board[colId].length}</Badge>
                             </div>
-                        )}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                            {Object.entries(columns).map(([column, items]) => (
-                                <div key={column} className="space-y-3">
-                                    <div className="flex items-center justify-between pb-2 border-b">
-                                        <span className="font-semibold text-sm">
-                                            {columnConfig[column as TodoColumn].label}
-                                        </span>
-                                        <Badge variant="secondary" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">
-                                            {items.length}
-                                        </Badge>
-                                    </div>
-                                    <div className="space-y-2 min-h-[100px]">
-                                        {items.map((item) => (
-                                            <Card key={item.id} className="hover:shadow-md transition-shadow">
-                                                <CardContent className="p-4 space-y-3">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <p className="font-medium text-sm leading-snug cursor-pointer" onClick={() => openEditor(item)}>{item.title}</p>
-                                                        <div className="flex gap-1">
-                                                            <Button variant="outline" size="sm" onClick={() => moveUp(item)}>Up</Button>
-                                                            <Button variant="outline" size="sm" onClick={() => moveDown(item)}>Down</Button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <select
-                                                            className="h-8 rounded-md border bg-transparent px-2 py-1 text-xs"
-                                                            value={item.column}
-                                                            onChange={(e) => moveToColumn(item, e.target.value as TodoColumn)}
-                                                        >
-                                                            <option value="UNASSIGNED">Unassigned</option>
-                                                            <option value="TO_DO">To Do</option>
-                                                            <option value="IN_PROGRESS">In Progress</option>
-                                                            <option value="DONE">Done</option>
-                                                            <option value="ARCHIVED">Archived</option>
-                                                        </select>
-                                                        {item.due_date && (
-                                                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                                <Calendar className="h-3 w-3" />
-                                                                Due {formatDateTime(item.due_date)}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
+
+                            <ColumnDroppable columnId={colId}>
+                                <SortableContext items={categorized.board[colId].map(t => t.id)} strategy={verticalListSortingStrategy}>
+                                    <div className="space-y-3">
+                                        {categorized.board[colId].map(item => (
+                                            <SortableTodoCard
+                                                key={item.id}
+                                                item={item}
+                                                onClick={() => setSelected(item)}
+                                                onColumnChange={(id, col) => {
+                                                    if (col === 'ARCHIVED') {
+                                                        const archiveItem = todos.find(t => t.id === id)
+                                                        if (archiveItem) handleArchive(archiveItem)
+                                                    } else {
+                                                        moveToColumn(id, col)
+                                                    }
+                                                }}
+                                            />
                                         ))}
-                                        {items.length === 0 && (
-                                            <div className="text-center py-8 text-sm text-muted-foreground">
-                                                No items.
-                                            </div>
-                                        )}
                                     </div>
-                                </div>
-                            ))}
+                                </SortableContext>
+                            </ColumnDroppable>
                         </div>
+                    ))}
+                </div>
 
-                        {selected && (
-                            <div className="mt-4 p-4 border rounded-md space-y-3">
-                                <div className="text-sm font-medium text-muted-foreground">Edit Todo</div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <Label htmlFor="edit-title">Title</Label>
-                                        <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label htmlFor="edit-column">Column</Label>
-                                        <select
-                                            id="edit-column"
-                                            className="h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                                            value={editColumn}
-                                            onChange={(e) => setEditColumn(e.target.value as TodoColumn)}
-                                        >
-                                            <option value="UNASSIGNED">Unassigned</option>
-                                            <option value="TO_DO">To Do</option>
-                                            <option value="IN_PROGRESS">In Progress</option>
-                                            <option value="DONE">Done</option>
-                                            <option value="ARCHIVED">Archived</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1 md:col-span-2">
-                                        <Label htmlFor="edit-description">Description</Label>
-                                        <textarea
-                                            id="edit-description"
-                                            className="h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-                                            value={editDescription}
-                                            onChange={(e) => setEditDescription(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-1 md:col-span-2">
-                                        <Label htmlFor="edit-due">Due date</Label>
-                                        <input
-                                            id="edit-due"
-                                            type="datetime-local"
-                                            className="h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm"
-                                            value={editDueDate}
-                                            onChange={(e) => setEditDueDate(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 justify-end">
-                                    <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
-                                    <Button onClick={handleSaveEdit}>Save</Button>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                <DragOverlay dropAnimation={null}>
+                    {activeId ? (
+                        (() => {
+                            const item = todos.find(t => t.id === activeId)
+                            if (!item) return null
+                            return (
+                                <Card className="w-[260px] shadow-lg">
+                                    <CardContent className="p-4 space-y-2">
+                                        <p className="font-medium text-sm leading-snug">{item.title}</p>
+                                        {item.due_date && (
+                                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                <Calendar className="h-3 w-3" />
+                                                {new Date(item.due_date).toLocaleDateString()}
+                                            </p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )
+                        })()
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
+            {/* Task Detail Modal */}
+            {selected && (
+                <TaskWindow
+                    task={selected}
+                    onClose={() => setSelected(null)}
+                    onUpdate={(updated) => {
+                        setTodos(prev => prev.map(t => t.id === updated.id ? updated : t))
+                        setSelected(updated)
+                    }}
+                    onArchive={(item) => {
+                        handleArchive(item)
+                        setSelected(null)
+                    }}
+                />
+            )}
+
+            {/* Separated Archive Section */}
+            <section className="pt-10 border-t">
+                <div className="flex items-center gap-2 mb-6 text-muted-foreground">
+                    <Archive className="h-5 w-5" />
+                    <h2 className="text-xl font-semibold">Archived Tasks</h2>
+                    <Badge variant="outline">{categorized.archived.length}</Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 opacity-75 grayscale hover:grayscale-0 transition-all">
+                    {categorized.archived.map(item => (
+                        <Card key={item.id} className="bg-muted/20">
+                            <CardContent className="p-4 flex flex-col gap-2">
+                                <span className="text-sm font-medium line-through decoration-muted-foreground">{item.title}</span>
+                                <Button variant="link" size="sm" className="h-auto p-0 w-fit text-xs" onClick={() => moveToColumn(item.id, 'UNASSIGNED')}>
+                                    Restore to board
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ))}
+                    {categorized.archived.length === 0 && (
+                        <p className="text-sm text-muted-foreground italic">No archived items.</p>
+                    )}
+                </div>
             </section>
         </div>
     )

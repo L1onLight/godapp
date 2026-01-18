@@ -39,13 +39,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "ninja",
     "corsheaders",
     "django_extensions",
     "celery",
     "base_utils",
     "todo.apps.TodoConfig",
     "notificator",
+    "vault",
 ]
+AUTH_USER_MODEL = "base_utils.SystemUser"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

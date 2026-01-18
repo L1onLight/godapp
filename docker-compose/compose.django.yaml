@@ -12,6 +12,7 @@ x-backend-defaults: &backend-defaults
 
   volumes:
     - ../backend/godapp_main:/backend/godapp_main
+    - ../scripts:/backend/scripts
   depends_on:
     - postgres
     - redis
@@ -20,16 +21,16 @@ x-backend-defaults: &backend-defaults
 services:
   godapp_main:
     <<: *backend-defaults
-    command: python manage.py runserver 0.0.0.0:8000
+    command: /backend/scripts/django/start.sh --dev ${DEV:-true} --port ${DJANGO_PORT:-8000}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${DJANGO_PORT:-8000}:8000"
 
-  celery_worker:
-    <<: *backend-defaults
-    # command: celery -A core worker --loglevel=info
-    command: watchmedo auto-restart --pattern=tasks.py --recursive -- celery -A core worker --loglevel=info --pool=solo
+  # celery_worker:
+  #   <<: *backend-defaults
+  #   # command: celery -A core worker --loglevel=info
+  #   command: watchmedo auto-restart --pattern=tasks.py --recursive -- celery -A core worker --loglevel=info --pool=solo
 
-  celery_beat:
-    <<: *backend-defaults
-    # command: celery -A core beat --loglevel=info
-    command: watchmedo auto-restart --pattern=tasks.py --recursive -- celery -A core beat --loglevel=info
+  # celery_beat:
+  #   <<: *backend-defaults
+  #   # command: celery -A core beat --loglevel=info
+  #   command: watchmedo auto-restart --pattern=tasks.py --recursive -- celery -A core beat --loglevel=info

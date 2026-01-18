@@ -373,6 +373,18 @@ files = [
 markers = {main = "platform_system == \"Windows\" or sys_platform == \"win32\"", dev = "platform_system == \"Windows\""}
 
 [[package]]
+name = "contextlib2"
+version = "21.6.0"
+description = "Backports and enhancements for the contextlib module"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "contextlib2-21.6.0-py2.py3-none-any.whl", hash = "sha256:3fbdb64466afd23abaf6c977627b75b6139a5a3e8ce38405c5b413aed7a0471f"},
+    {file = "contextlib2-21.6.0.tar.gz", hash = "sha256:ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869"},
+]
+
+[[package]]
 name = "cryptography"
 version = "46.0.3"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
@@ -523,6 +535,49 @@ doc = ["markdown-include", "mkdocs", "mkdocs-material", "mkdocstrings"]
 test = ["django-stubs", "mypy (==1.7.1)", "psycopg2-binary", "pytest", "pytest-asyncio", "pytest-cov", "pytest-django", "ruff (==0.5.7)"]
 
 [[package]]
+name = "django-ninja-extra"
+version = "0.30.8"
+description = "Django Ninja Extra - Class Based Utility and more for Django Ninja(Fast Django REST framework)"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "django_ninja_extra-0.30.8-py3-none-any.whl", hash = "sha256:ac0de87aae3d21f4ed7f120c41334c9277346efc393d4891fa0ba99c9ffdd8d5"},
+    {file = "django_ninja_extra-0.30.8.tar.gz", hash = "sha256:f18089ed87067342f1641c01c023472834d3eae26a396389da1432f1ee0c270d"},
+]
+
+[package.dependencies]
+asgiref = "*"
+contextlib2 = "*"
+Django = ">=2.2"
+django-ninja = "1.5.1"
+injector = ">=0.19.0"
+
+[[package]]
+name = "django-ninja-jwt"
+version = "5.4.2"
+description = "Django Ninja JWT - JSON Web Token for Django-Ninja"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "django_ninja_jwt-5.4.2-py3-none-any.whl", hash = "sha256:93315eb78ab43b2c4410e7efafc61b220eab9c3e773f4c4d50af1b69d4e6ab19"},
+    {file = "django_ninja_jwt-5.4.2.tar.gz", hash = "sha256:91a5eb1d7bd6a3752631bf476676430277877f55d7fca682e62857b9528c6bbe"},
+]
+
+[package.dependencies]
+Django = ">=2.1"
+django-ninja-extra = ">=0.30.5"
+pydantic-settings = ">=2.0.0"
+pyjwt = [
+    {version = ">=1.7.1,<3"},
+    {version = "*", extras = ["crypto"]},
+]
+
+[package.extras]
+crypto = ["cryptography (>=3.3.1)"]
+
+[[package]]
 name = "django-polymorphic"
 version = "4.4.1"
 description = "Seamless polymorphic inheritance for Django models."
@@ -644,6 +699,21 @@ files = [
 
 [package.extras]
 all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
+
+[[package]]
+name = "injector"
+version = "0.23.0"
+description = "Injector - Python dependency injection framework, inspired by Guice"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "injector-0.23.0-py2.py3-none-any.whl", hash = "sha256:86ab389805b4aaabfe235b2b2b85ff515af4d0209faccf1d60de2872c92c1fa0"},
+    {file = "injector-0.23.0.tar.gz", hash = "sha256:7e59db84faa5358474c8ee05abca6ab6bd02519fbefcf175e0b230ee7d2d4bac"},
+]
+
+[package.extras]
+dev = ["black (==24.3.0) ; implementation_name == \"cpython\"", "build (==1.0.3)", "check-manifest (==0.49)", "click (==8.1.7)", "coverage[toml] (==7.3.2)", "exceptiongroup (==1.2.0)", "importlib-metadata (==7.0.0)", "iniconfig (==2.0.0)", "mypy (==1.7.1) ; implementation_name == \"cpython\"", "mypy-extensions (==1.0.0)", "packaging (==25.0)", "pathspec (==0.12.1)", "platformdirs (==4.1.0)", "pluggy (==1.3.0)", "pyproject-hooks (==1.0.0)", "pytest (==7.4.3)", "pytest-cov (==4.1.0)", "tomli (==2.0.1)", "typing-extensions (==4.9.0) ; python_version < \"3.9\"", "zipp (==3.19.1)"]
 
 [[package]]
 name = "kombu"
@@ -1050,6 +1120,9 @@ files = [
     {file = "pyjwt-2.10.1.tar.gz", hash = "sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953"},
 ]
 
+[package.dependencies]
+cryptography = {version = ">=3.4.0", optional = true, markers = "extra == \"crypto\""}
+
 [package.extras]
 crypto = ["cryptography (>=3.4.0)"]
 dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
@@ -1144,6 +1217,35 @@ circuit-breaker = ["pybreaker (>=1.4.0)"]
 hiredis = ["hiredis (>=3.2.0)"]
 jwt = ["pyjwt (>=2.9.0)"]
 ocsp = ["cryptography (>=36.0.1)", "pyopenssl (>=20.0.1)", "requests (>=2.31.0)"]
+
+[[package]]
+name = "ruff"
+version = "0.14.10"
+description = "An extremely fast Python linter and code formatter, written in Rust."
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "ruff-0.14.10-py3-none-linux_armv6l.whl", hash = "sha256:7a3ce585f2ade3e1f29ec1b92df13e3da262178df8c8bdf876f48fa0e8316c49"},
+    {file = "ruff-0.14.10-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:674f9be9372907f7257c51f1d4fc902cb7cf014b9980152b802794317941f08f"},
+    {file = "ruff-0.14.10-py3-none-macosx_11_0_arm64.whl", hash = "sha256:d85713d522348837ef9df8efca33ccb8bd6fcfc86a2cde3ccb4bc9d28a18003d"},
+    {file = "ruff-0.14.10-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6987ebe0501ae4f4308d7d24e2d0fe3d7a98430f5adfd0f1fead050a740a3a77"},
+    {file = "ruff-0.14.10-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:16a01dfb7b9e4eee556fbfd5392806b1b8550c9b4a9f6acd3dbe6812b193c70a"},
+    {file = "ruff-0.14.10-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7165d31a925b7a294465fa81be8c12a0e9b60fb02bf177e79067c867e71f8b1f"},
+    {file = "ruff-0.14.10-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:c561695675b972effb0c0a45db233f2c816ff3da8dcfbe7dfc7eed625f218935"},
+    {file = "ruff-0.14.10-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:4bb98fcbbc61725968893682fd4df8966a34611239c9fd07a1f6a07e7103d08e"},
+    {file = "ruff-0.14.10-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:f24b47993a9d8cb858429e97bdf8544c78029f09b520af615c1d261bf827001d"},
+    {file = "ruff-0.14.10-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:59aabd2e2c4fd614d2862e7939c34a532c04f1084476d6833dddef4afab87e9f"},
+    {file = "ruff-0.14.10-py3-none-manylinux_2_31_riscv64.whl", hash = "sha256:213db2b2e44be8625002dbea33bb9c60c66ea2c07c084a00d55732689d697a7f"},
+    {file = "ruff-0.14.10-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:b914c40ab64865a17a9a5b67911d14df72346a634527240039eb3bd650e5979d"},
+    {file = "ruff-0.14.10-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:1484983559f026788e3a5c07c81ef7d1e97c1c78ed03041a18f75df104c45405"},
+    {file = "ruff-0.14.10-py3-none-musllinux_1_2_i686.whl", hash = "sha256:c70427132db492d25f982fffc8d6c7535cc2fd2c83fc8888f05caaa248521e60"},
+    {file = "ruff-0.14.10-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:5bcf45b681e9f1ee6445d317ce1fa9d6cba9a6049542d1c3d5b5958986be8830"},
+    {file = "ruff-0.14.10-py3-none-win32.whl", hash = "sha256:104c49fc7ab73f3f3a758039adea978869a918f31b73280db175b43a2d9b51d6"},
+    {file = "ruff-0.14.10-py3-none-win_amd64.whl", hash = "sha256:466297bd73638c6bdf06485683e812db1c00c7ac96d4ddd0294a338c62fdc154"},
+    {file = "ruff-0.14.10-py3-none-win_arm64.whl", hash = "sha256:e51d046cf6dda98a4633b8a8a771451107413b0f07183b2bef03f075599e44e6"},
+    {file = "ruff-0.14.10.tar.gz", hash = "sha256:9a2e830f075d1a42cd28420d7809ace390832a490ed0966fe373ba288e77aaf4"},
+]
 
 [[package]]
 name = "six"
@@ -1316,4 +1418,4 @@ dev = ["black (>=19.3b0) ; python_version >= \"3.6\"", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "8731e01f838c80efce5238e0a56371f25d8f31eee3397b72893bb82f5e23b000"
+content-hash = "19119423f51487edecae1961df43598d640c2fa9705bb31b546093da2c34adf8"

@@ -23,7 +23,10 @@ export default function AuthPage() {
             await authorize({ username, password });
             authService.setAuthenticated(true);
 
-            window.location.href = "/";
+            const params = new URLSearchParams(window.location.search);
+            const back = params.get('back');
+            const target = back && back.startsWith('/') ? back : '/';
+            window.location.href = target;
         } catch (err) {
             setError(err instanceof Error ? err.message : "An error occurred");
         } finally {
