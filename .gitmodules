@@ -1,0 +1,7 @@
+[submodule "backend"]
+	path = backend
+	url = git@gitlab.com:godapp/backend.git
+
+[submodule "frontend"]
+	path = frontend
+	url = git@gitlab.com:godapp/frontend.git
